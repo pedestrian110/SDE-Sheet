@@ -1,55 +1,81 @@
 /*
   Problem: Minimum Cost to Cut a Stick
 
-  You're given a wooden stick of length `n` and an array `cuts[]` representing the positions where you need to make cuts.
-  You can perform the cuts in any order.
-  The cost of making a cut is equal to the length of the stick being cut at that moment.
+  You're given a stick of length 'n' and a list of positions to cut called 'cuts'.
+  The cost of a cut is equal to the length of the stick segment being cut.
+  You can rearrange the order of cuts to minimize the total cost.
 
-  Goal: Minimize the total cost of all cuts.
+  ✅ Approaches Used:
+  -------------------
+  1. Top-Down (Recursive + Memoization)
+  2. Bottom-Up (Dynamic Programming)
 
-  ✅ Approach: Dynamic Programming
-  ----------------------------------
-  1. Sort the `cuts` array and add the boundaries (0 and n) to create full segments.
-     For example, if cuts = [1, 3, 4], and n = 7 → positions = [0, 1, 3, 4, 7]
+  -------------------------------------------
+  Top-Down Explanation:
+  - Add boundary cuts at positions 0 and n.
+  - Sort the cuts array.
+  - Use recursion to try all possible cut positions between two indices i and j.
+  - At each cut, cost = (length of current stick segment) + cost of cutting left part + cost of cutting right part.
+  - Store results in a memoization table to avoid recomputation.
+  -------------------------------------------
 
-  2. Define dp[i][j] = the minimum cost to cut the stick between positions[i] and positions[j]
-
-  3. The recursive relation:
-     For each possible cut between i and j (i+1 to j-1),
-     the cost of cutting at position[k] = (positions[j] - positions[i]) + dp[i][k] + dp[k][j]
-
-  4. Use bottom-up DP to fill dp[][].
-
-  Time Complexity: O(m^3), where m = number of cuts + 2 (for added 0 and n)
+  -------------------------------------------
+  Bottom-Up Explanation:
+  - Use a 2D DP table where dp[i][j] = minimum cost to cut between cuts[i] and cuts[j].
+  - Fill the table diagonally (from small segments to larger ones).
+  - For each segment, try all possible intermediate cuts and choose the minimum cost.
+  -------------------------------------------
 */
 
 class Solution {
-public:
-    int minCost(int n, vector<int>& cuts) {
-        // Step 1: Sort the cuts and include 0 and n
-        cuts.push_back(0);
-        cuts.push_back(n);
-        sort(cuts.begin(), cuts.end());
+ public:
+  // Top-level function to call either approach
+  int minCost(int n, vector<int>& cuts) {
+    cuts.push_back(0);
+    cuts.push_back(n);
+    ranges::sort(cuts);
 
-        int m = cuts.size();
-        vector<vector<int>> dp(m, vector<int>(m, 0));
+    // Uncomment either of the approaches:
 
-        // Step 2: Fill the DP table bottom-up
-        // len is the length of the segment (we go from small to large)
-        for (int len = 2; len < m; ++len) {
-            for (int i = 0; i + len < m; ++i) {
-                int j = i + len;
-                dp[i][j] = INT_MAX;
+    // ---------- Top-Down Approach ----------
+    // vector<vector<int>> mem(cuts.size(), vector<int>(cuts.size(), INT_MAX));
+    // return topDown(cuts, 0, cuts.size() - 1, mem);
 
-                // Step 3: Try every cut between i and j
-                for (int k = i + 1; k < j; ++k) {
-                    int cost = cuts[j] - cuts[i] + dp[i][k] + dp[k][j];
-                    dp[i][j] = min(dp[i][j], cost);
-                }
-            }
-        }
+    // ---------- Bottom-Up Approach ----------
+    return bottomUp(cuts);
+  }
 
-        // Final answer is the cost to cut the full stick from 0 to n
-        return dp[0][m - 1];
+ private:
+  // Top-Down Recursive + Memoization
+  int topDown(const vector<int>& cuts, int i, int j, vector<vector<int>>& mem) {
+    if (j - i <= 1)
+      return 0;  // No cuts possible in a segment of length ≤ 1
+    if (mem[i][j] != INT_MAX)
+      return mem[i][j];
+
+    // Try every possible cut between i and j
+    for (int k = i + 1; k < j; ++k)
+      mem[i][j] = min(mem[i][j], cuts[j] - cuts[i] + 
+                      topDown(cuts, i, k, mem) + topDown(cuts, k, j, mem));
+
+    return mem[i][j];
+  }
+
+  // Bottom-Up DP Approach
+  int bottomUp(const vector<int>& cuts) {
+    int sz = cuts.size();
+    vector<vector<int>> dp(sz, vector<int>(sz, 0));
+
+    // d is the distance between i and j
+    for (int d = 2; d < sz; ++d) {
+      for (int i = 0; i + d < sz; ++i) {
+        int j = i + d;
+        dp[i][j] = INT_MAX;
+        for (int k = i + 1; k < j; ++k)
+          dp[i][j] = min(dp[i][j], cuts[j] - cuts[i] + dp[i][k] + dp[k][j]);
+      }
     }
+
+    return dp[0][sz - 1];  // Minimum cost to cut entire stick
+  }
 };
